@@ -1,17 +1,35 @@
 package main
 
 import (
-	"io"
-	"net"
-	"os"
+	"fmt"
+	"math"
 )
 
-func main() {
-	conn, err := net.Dial("tcp", "example.com:80")
-	if err != nil {
-		panic(err)
-	}
+func printNumber() chan int {
+	result := make(chan int)
+	go func() {
+		result <- 2
+		for i := 3; i < 100000; i += 2 {
+			l := int(math.Sqrt(float64(i)))
+			found := false
+			for j := 3; j < l+1; j += 2 {
+				if i%j == 0 {
+					found = true
+					break
+				}
+			}
+			if !found {
+				result <- l
+			}
+		}
+		close(result)
+	}()
+	return result
+}
 
-	io.WriteString(conn, "GET / HTTP/1.0\r\nHost: example.com\r\n\r\n")
-	io.Copy(os.Stdout, conn)
+func main() {
+	pn := printNumber()
+	for n := range pn {
+		fmt.Println(n)
+	}
 }
